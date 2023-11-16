@@ -31,20 +31,22 @@ def get_user_input(input_prompt, input_type):
 	while True:
 		user_input = input(input_prompt)
 		#check if the user's input is valid,using strip function to remove whitespace,if result is empty,means the user's input has no valid content
-		if not user_input.strip():
+		if not user_input.strip():#if the user's input is not empty,nothing happeneds here
 			print(f"{input_type} cannot be empty. Please enter a valid {input_type}.")
 			continue 
 		print(f"Your input is: '{user_input}'") #let user confirm the input
+    #if user confirmed the input, using it for the query
 		if input("Do you confirm yout input? (y/n): ").lower() == "y":
 			return user_input
 
+#ask the user to name the filename
 def get_filename_input(input_prompt):
   while True:
     filename = input(input_prompt)
     if not filename.strip():
-      print("Filename cannot be empty.Please enter a valid filename.")
+      print("Filename cannot be empty.Please enter a valid filename.")#aviod empty input
       continue
-    if not filename.lower().endswith('.fasta'):
+    if not filename.lower().endswith('.fasta'):#add file extension '.fasta' 
       filename += '.fasta'
       print(f"Your filename is: '{filename}'")
       if input("Do you confirm your filename? (y/n): ").lower() == "y":

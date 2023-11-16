@@ -33,10 +33,23 @@ def get_user_input(input_prompt, input_type):
 		#check if the user's input is valid,using strip function to remove whitespace,if result is empty,means the user's input has no valid content
 		if not user_input.strip():
 			print(f"{input_type} cannot be empty. Please enter a valid {input_type}.")
-			continue
-		print(f"Your input is: '{user_input}'")
-		if input("Do you confirm yout input? (yes/no): ").lower() == "yes":
+			continue 
+		print(f"Your input is: '{user_input}'") #let user confirm the input
+		if input("Do you confirm yout input? (y/n): ").lower() == "y":
 			return user_input
+
+def get_filename_input(input_prompt):
+  while True:
+    filename = input(input_prompt)
+    if not filename.strip():
+      print("Filename cannot be empty.Please enter a valid filename.")
+      continue
+    if not filename.lower().endswith('.fasta'):
+      filename += '.fasta'
+      print(f"Your filename is: '{filename}'")
+      if input("Do you confirm your filename? (y/n): ").lower() == "y":
+        return filename
+      
 
 #save the output fasta into a file
 def save_output_to_file(data, filename):
@@ -60,14 +73,17 @@ while True:
 		sequence_count = count_sequences_in_fasta(fasta_result)
 		print(f"Number of sequences found: {sequence_count}")
     #ask the user to put the output into a file and let them to name the filename
-		if input("Do you want to save the results to a file? (yes/no): ").lower() == "yes":
-			filename = get_user_input("Enter the filename to save: ", "Filename")
+    
+		if input("Do you want to save the results to a file? (y/n): ").lower() == "y":
+			filename = get_filename_input("Enter the filename to save (it will be saved with .fasta extension): ")
 			save_output_to_file(fasta_result, filename)
+      
+   
     #ask if the user want to query other proteins and organisms
     #if they do not want to query other sequences, then finish the query
-		if input("Do you want to continue querying other sequences? (yes/no): ").lower() != "yes":
+		if input("Do you want to continue querying other sequences? (y/n): ").lower() != "y":
 			break
-	else:
+	else:#if the sequence number is 0,means find nothing from NCBI,using 'print'to tell the user
 		print("No results found for the given protein name and organism. Please try again.")
-		if input("Do you want to try again? (yes/no): ").lower() != "yes":
+		if input("Do you want to try again? (y/n): ").lower() != "y":
 			break

@@ -78,10 +78,10 @@ def main():
       
           if fasta_data:
               sequence_count = count_sequences_in_fasta(fasta_data)#count the number of fasta data
-              print(f"Number of sequence found: {sequence_count}")
+              print(f"Number of sequence found: {sequence_count}")#print the count to the screen
         
               if input("Do you want to save the results to a file? (y/n): ").lower() == "y":
-                  filename = get_filename_input("Enter the filename to save (it will be saved with .fasta extension): ")
+                  filename = protein_name.replace(" ", "_") + ".fasta"#using `replace` methond to name the out put file using the queried protein name
                   save_output_to_file(fasta_data, filename)
               if input("Do you want to continue querying other sequences? (y/n): ").lower() != "y":
                   break

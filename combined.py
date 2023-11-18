@@ -6,9 +6,12 @@ import subprocess#Importing the subprocess module to execute external commands
 #build a string called query to contain protein name and taxon_group
 #define the command of searching in NCBI as cmd
 #using subprocess run the command and capture its output and errors
-def efetch_fasta_ncbi(protein_name, taxon_group):
+def efetch_fasta_ncbi(protein_name, taxon_group, include_not_partial):
     print("Starting querying from NCBI")
-    query = f"{protein_name}[Protein] AND {taxon_group}[Organism] NOT PARTIAL"
+    if include_not_partial == "y":
+        query = f"{protein_name}[Protein] AND {taxon_group}[Organism] NOT PARTIAL"
+    else:
+        query = f"{protein_name}[Protein] AND {taxon_group}[Organism]"
     cmd = f"esearch -db protein -query '{query}' | efetch -format fasta"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     #check if the command excuted successfully,if not then raise an exception
@@ -27,6 +30,7 @@ def get_user_inputs():#create an infinite loop,execute code until encounter a re
     while True:
         protein_name = input("Enter the protein name: ").strip()
         taxon_group = input("Enter the taxon group: ").strip()#check if the input is empty
+        include_not_partial = input("Do you want to query sequences only match the specified input?(y/n): ").strip().lower()
         if not protein_name or not taxon_group:
             print("Your input cannot be empty. Please enter a valid protein name.")
             continue
@@ -34,7 +38,7 @@ def get_user_inputs():#create an infinite loop,execute code until encounter a re
         print(f"Your protein name is: '{protein_name}'")
         print(f"Your taxon group is: '{taxon_group}'")
         if input("Do you confirm your inputs? (y/n): ").lower() == "y":
-            return protein_name, taxon_group
+            return protein_name, taxon_group, include_not_partial
         else:
             print("Please re-enter your inputs.")
 
@@ -67,6 +71,7 @@ def run_clustalo(input_fasta, output_dir):
     subprocess.run(clustalo_command, check=True)# Run the Clustal Omega command
     return output_fasta
 
+#Plot conservation of a sequence alignment using 'plotco'
 def run_plotcon(input_fasta, output_dir):
     output_file = os.path.join(output_dir, "plotcon_output.png")
     if os.path.exists(output_file):
@@ -87,11 +92,13 @@ def run_plotcon(input_fasta, output_dir):
 def main():
     try:#add an error trapping to check the code
         while True:
-            protein_name, taxon_group = get_user_inputs()
-            fasta_data = efetch_fasta_ncbi(protein_name, taxon_group)
+            protein_name, taxon_group,include_not_partial = get_user_inputs()
+            fasta_data = efetch_fasta_ncbi(protein_name, taxon_group, include_not_partial)
             if fasta_data:
                 sequence_count = count_sequences_in_fasta(fasta_data)#count the number of fasta data
                 print(f"Number of sequences found: {sequence_count}")#print the count to the screen
+            else:
+                print("No data returned from NCBI.")
                 filename = protein_name.replace(" ", "_") + ".fasta"#using `replace` methond to name the out put file using the queried protein name
                 save_output_to_file(fasta_data, filename)
                 output_dir = protein_name.replace(" ", "_") + "_output"
@@ -99,9 +106,10 @@ def main():
                 os.makedirs(output_dir, exist_ok=True)
                 aligned_fasta = run_clustalo(filename, output_dir)
                 print(f"Aligned sequences saved to {aligned_fasta}")
+                    
                 plotcon_output = run_plotcon(aligned_fasta, output_dir)
                 print(f"Conservation plot saved to {plotcon_output}")
-                
+            
             if input("Do you want to continue querying other sequences? (y/n): ").lower() != "y":
                 break
     except Exception as e:

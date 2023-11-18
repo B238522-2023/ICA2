@@ -1,32 +1,36 @@
 #!/usr/bin/python3
-import os
-import subprocess
+import os#import os module to make a directory
+import subprocess#Importing the subprocess module to execute external commands
 
-
+#Defining the function fasta_ncbi to execute the NCBI query and get the output in fasta format
+#build a string called query to contain protein name and taxon_group
+#define the command of searching in NCBI as cmd
+#using subprocess run the command and capture its output and errors
 def efetch_fasta_ncbi(protein_name, taxon_group):
     print("Starting querying from NCBI")
     query = f"{protein_name}[Protein] AND {taxon_group}[Organism] NOT PARTIAL"
     cmd = f"esearch -db protein -query '{query}' | efetch -format fasta"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    #check if the command excuted successfully,if not then raise an exception
     if result.returncode != 0:
         print("An error occurred in efetch_fasta_ncbi function")
         return None
-    print("Finished querying from NCBI")
-    return result.stdout
-
+    print("Finished querying from NCBI")#tell the user their query is finish
+    return result.stdout# return the standard output in fasta format
+    
+#count the sequence nuber of the output and return it to 'fasta_data'
 def count_sequences_in_fasta(fasta_data):
     return fasta_data.count('>')
 
-def get_user_inputs():
+#show the user's input on the screen to confirm
+def get_user_inputs():#create an infinite loop,execute code until encounter a return statement
     while True:
         protein_name = input("Enter the protein name: ").strip()
-        if not protein_name:
-            print("Protein name cannot be empty. Please enter a valid protein name.")
+        taxon_group = input("Enter the taxon group: ").strip()#check if the input is empty
+        if not protein_name or not taxon_group:
+            print("Your input cannot be empty. Please enter a valid protein name.")
             continue
-        taxon_group = input("Enter the taxon group: ").strip()
-        if not taxon_group:
-            print("Taxon group cannot be empty. Please enter a valid taxon group.")
-            continue
+        #print the user's input on the screen to confirm
         print(f"Your protein name is: '{protein_name}'")
         print(f"Your taxon group is: '{taxon_group}'")
         if input("Do you confirm your inputs? (y/n): ").lower() == "y":
@@ -34,29 +38,33 @@ def get_user_inputs():
         else:
             print("Please re-enter your inputs.")
 
-def save_output_to_file(data, filename):
-    with open(filename, 'w') as file:
-        file.write(data)
+#save the output in to a file
+def save_output_to_file(data, filename):#data need to be saved and the file name
+    with open(filename, 'w') as file:#using write mode to open a file
+        file.write(data)#write the data into the file
     print(f"Data saved to {filename}")
 
+#Create the output directory (if it does not exist) and return the directory path
+#If a valid output directory path is provided, try to create the directory, and no error is raised if the directory already exists
 def create_output_dir(output_dir):
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
         return output_dir
     else:
-        return os.getcwd()
+        return os.getcwd()#If no valid output directory path is provided, return the path to the current working directory
 
+# Define a function called "run_clustalo" that takes input parameters: input_fasta, output_fasta, number of threads, output_directory
 def run_clustalo(input_fasta, output_dir):
     output_fasta = os.path.join(output_dir, "aligned.fasta")
     clustalo_command = [
         "clustalo",
-        "-i", input_fasta,
+        "-i", input_fasta, #-full??
         "-o", output_fasta,
-        "--force",
-        "--auto",
-        "--threads", "64"
+        "--force",# Overwrite an existing output file
+        "--auto",# Choose the most appropriate strategy and parameters automatically
+        "--threads", "64"#using 64 threads to raise the speed
     ]
-    subprocess.run(clustalo_command, check=True)
+    subprocess.run(clustalo_command, check=True)# Run the Clustal Omega command
     return output_fasta
 
 def run_plotcon(input_fasta, output_dir):
@@ -67,22 +75,24 @@ def run_plotcon(input_fasta, output_dir):
     plotcon_command = [
         "plotcon",
         "-sequence", input_fasta,
-        "-graph", "png",
+        "-graph", "png",#define the format of the output graph into 'png'
         "-winsize", "4",
         "-goutfile", output_file,
     ]
     subprocess.run(plotcon_command, check=True)
     return output_file
 
+#define a main function 
+#define the protein and taxon group according to the user's input
 def main():
-    try:
+    try:#add an error trapping to check the code
         while True:
             protein_name, taxon_group = get_user_inputs()
             fasta_data = efetch_fasta_ncbi(protein_name, taxon_group)
             if fasta_data:
-                sequence_count = count_sequences_in_fasta(fasta_data)
-                print(f"Number of sequences found: {sequence_count}")
-                filename = protein_name.replace(" ", "_") + ".fasta"
+                sequence_count = count_sequences_in_fasta(fasta_data)#count the number of fasta data
+                print(f"Number of sequences found: {sequence_count}")#print the count to the screen
+                filename = protein_name.replace(" ", "_") + ".fasta"#using `replace` methond to name the out put file using the queried protein name
                 save_output_to_file(fasta_data, filename)
                 output_dir = protein_name.replace(" ", "_") + "_output"
                 
@@ -96,7 +106,8 @@ def main():
                 break
     except Exception as e:
         print(f"An error occurred: {e}")
-
+        
+#check whether the script is run as a master program,if is ,the variable '__name__' will be set to main and main function will be called, allowing other scripts to use the functions defined in this script, without executing the code in the main function.
 if __name__ == "__main__":
     main()
 

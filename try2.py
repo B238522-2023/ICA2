@@ -23,17 +23,21 @@ def extract_species_and_sequences(fasta_data):
         species_dict.setdefault(current_species, []).append((sequence_id, sequence_data))
     return species_dict#returns a dictionary containing species information and sequence data
 
+#define a function that takes as input a dictionary containing species information and sequence data
 def user_select_species(species_dict):
-    species_list = list(species_dict.keys())
+    species_list = list(species_dict.keys())#get the names of all species and store them in a list
     print("Available species:")
     for i, species in enumerate(species_list, start=1):
-        print(f"{i}. {species}")
+        print(f"{i}. {species}")#print the number and name of each species
 
+    #let the user to enter the selected species and give an example
+    #parse the selection and converts it to a list of integers
     selected_indices = input("Select species by number (e.g., 2,5,7): ")
     selected_indices = [int(idx.strip()) - 1 for idx in selected_indices.split(',')]
-
+    #get the species name according to the index selected by the user
     selected_species = [species_list[i] for i in selected_indices]
-    selected_sequences = []
+    selected_sequences = []#creates an empty list to store all the sequences selected by the user
+    #add all sequences under that species to the list of selected sequences
     for species in selected_species:
         selected_sequences.extend(species_dict[species])
 
@@ -129,8 +133,12 @@ def run_plotcon(input_fasta, output_dir):
         "-goutfile", output_file,
     ]
     subprocess.run(plotcon_command, check=True)
-    return output_file
+    print(f"Plotcon output generated: {output_file}")
 
+
+    return output_file    
+    
+#define a funciton using foe motif scan
 def motif_scan_for_each_sequence(selected_sequences, output_dir):
     for sequence_id, sequence in selected_sequences:
         process_sequence(sequence_id, sequence, output_dir)

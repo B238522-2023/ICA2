@@ -40,7 +40,6 @@ def user_select_species(species_dict):
     #add all sequences under that species to the list of selected sequences
     for species in selected_species:
         selected_sequences.extend(species_dict[species])
-
     return selected_species, selected_sequences
     
 #Defining the function fasta_ncbi to execute the NCBI query and get the output in fasta format
@@ -78,7 +77,7 @@ def get_user_inputs():#create an infinite loop,execute code until encounter a re
         protein_name = input("Enter the protein name: ").strip()
         taxon_group = input("Enter the Organism: ").strip()#check if the input is empty
         strict_search = input("Do you want a strict search? (y/n): ").lower().strip()
-        
+    
         if not protein_name or not taxon_group:
             print("Your input cannot be empty. Please enter a valid protein name.")
             continue
@@ -134,8 +133,6 @@ def run_plotcon(input_fasta, output_dir):
     ]
     subprocess.run(plotcon_command, check=True)
     print(f"Plotcon output generated: {output_file}")
-
-
     return output_file    
     
 #define a funciton using foe motif scan
@@ -144,7 +141,7 @@ def motif_scan_for_each_sequence(selected_sequences, output_dir):
         process_sequence(sequence_id, sequence, output_dir)
 
 def process_sequence(sequence_id, sequence, output_dir):
-    output_motif = os.path.join(output_dir, f"motif_scan_{sequence_id}.doc")
+    output_motif = os.path.join(output_dir, f"motif_scan_{sequence_id}.patmatmotifs")
     motifscan_command = [
         "patmatmotifs",
         "-full",
@@ -162,6 +159,25 @@ def process_sequence(sequence_id, sequence, output_dir):
         print(f"Patmatmotifs for {sequence_id} completed successfully.")
         print(motif_scan_result.stdout)
 
+#add some other EMBOSS commands
+#using extractalign to extract the aligned sequeces
+def extract_aligned_sequences(input_fasta, output_dir):
+    # Specifies the path to the output file
+    output_fasta = os.path.join(output_dir, "extracted_aligned_sequences.fasta")
+
+    #Define extractalign commands and parameter
+    extractalign_command = [
+        "extractalign",
+        "-sequence", input_fasta,
+        "-outseq", output_fasta,
+    ]
+
+    #Run the extractalign command
+    subprocess.run(extractalign_command, check=True)
+    print(f"Extracted aligned sequences saved to {output_fasta}")
+
+
+
 #define a main function 
 #define the protein and taxon group according to the user's input
 def main():
@@ -174,32 +190,43 @@ def main():
             if fasta_data:
                 sequence_count = count_sequences_in_fasta(fasta_data)
                 print(f"Number of sequences found: {sequence_count}")
-
-                restrict_species = input("Do you want to refine by species? (y/n): ").lower().strip()
-
+                
+                #If the user wants to refine the species, use the user-selected sequence
+                restrict_species = input("Do you want to refine sequences by species? (y/n): ").lower().strip()
+                selected_species_str = ""  # Initialize the variable
+                
+                #If the user choose Yes, only process the selected species
                 if restrict_species == 'y':
                     species_dict = extract_species_and_sequences(fasta_data)
                     selected_species, selected_sequences = user_select_species(species_dict)
-                    print("Species selected by user.")
-
                     selected_species_str = '_'.join(selected_species).replace(' ', '_')
-                    fasta_data_to_analyze = '\n'.join([f'>{seq_id}\n{seq}' for seq_id, seq in selected_sequences])
-                    output_dir = create_output_dir(f"{protein_name.replace(' ', '_')}_{selected_species_str}_output")
+                
                 else:
-                    fasta_data_to_analyze = fasta_data
-                    output_dir = create_output_dir(f"{protein_name.replace(' ', '_')}_output")
-
+                    #if user choose 'n',process all the sequences
+                    #Converts fasta data to a format suitable for modular scanning
+                    all_sequences = fasta_data.split('>')
+                    selected_sequences = [(seq.split('\n', 1)[0], '\n'.join(seq.split('\n', 1)[1:])) for seq in all_sequences if seq.strip()]
+                    selected_species_str = "all_species"
+                
+                output_dir = create_output_dir(f"{protein_name.replace(' ', '_')}_{selected_species_str}_output")
+                
+                #Save the processed sequence to a file
                 fasta_filename = os.path.join(output_dir, "processed_sequences.fasta")
+                fasta_data_to_analyze = '\n'.join(['>' + seq for _, seq in selected_sequences])
                 save_output_to_file(fasta_data_to_analyze, fasta_filename)
                 print("FASTA data saved to file.")
 
+                #run clustalo and plotcon
                 aligned_fasta = run_clustalo(fasta_filename, output_dir)
                 plotcon_output = run_plotcon(aligned_fasta, output_dir)
 
-                if restrict_species == 'y':
-                    motif_scan_for_each_sequence(selected_sequences, output_dir)
-                else:
-                    motif_scan_for_each_sequence([(protein_name, fasta_data)], output_dir)
+                #run motif_scan
+                motif_scan_for_each_sequence(selected_sequences, output_dir)
+                
+                # Asks the user whether to extract aligned sequences
+                extract_align = input("Do you want to extract aligned sequences? (y/n): ").lower().strip()
+                if extract_align == 'y': #Calls the function that extracts the alignment sequence
+                    extract_aligned_sequences(aligned_fasta, output_dir)                
 
             if input("Do you want to continue querying other sequences? (y/n): ").lower() != "y":
                 print("Exiting the program.")

@@ -59,6 +59,8 @@ def efetch_fasta_ncbi(protein_name, Organism, strict):
         print("An error occurred in efetch_fasta_ncbi function")
         return None
     print("Finished querying from NCBI")#tell the user their query is finish
+    fasta_data = result.stdout
+    
     
     # Split the output into individual sequences
     sequences = result.stdout.split('>')[1:]  # Splitting and removing the first empty string
@@ -109,7 +111,7 @@ def run_clustalo(input_fasta, output_dir):
     output_fasta = os.path.join(output_dir, "aligned.fasta")
     clustalo_command = [
         "clustalo",
-        "-i", input_fasta, #-full??
+        "-i", input_fasta, 
         "-o", output_fasta,
         "--force",# Overwrite an existing output file
         "--auto",# Choose the most appropriate strategy and parameters automatically
@@ -141,7 +143,7 @@ def motif_scan_for_each_sequence(selected_sequences, output_dir):
         process_sequence(sequence_id, sequence, output_dir)
 
 def process_sequence(sequence_id, sequence, output_dir):
-    output_motif = os.path.join(output_dir, f"motif_scan_{sequence_id}.patmatmotifs")
+    output_motif = os.path.join(output_dir, f"motif_scan_{sequence_id}.doc")
     motifscan_command = [
         "patmatmotifs",
         "-full",
@@ -191,23 +193,24 @@ def main():
                 sequence_count = count_sequences_in_fasta(fasta_data)
                 print(f"Number of sequences found: {sequence_count}")
                 
+               # Save the raw query data to a file named after the protein
+                raw_fasta_filename = f"{protein_name.replace(' ', '_')}.fasta"
+                save_output_to_file(fasta_data, raw_fasta_filename)
+                
                 #If the user wants to refine the species, use the user-selected sequence
                 restrict_species = input("Do you want to refine sequences by species? (y/n): ").lower().strip()
-                selected_species_str = ""  # Initialize the variable
-                
+                selected_species_str = ""  # Default value for species string
                 #If the user choose Yes, only process the selected species
                 if restrict_species == 'y':
                     species_dict = extract_species_and_sequences(fasta_data)
                     selected_species, selected_sequences = user_select_species(species_dict)
                     selected_species_str = '_'.join(selected_species).replace(' ', '_')
-                
                 else:
                     #if user choose 'n',process all the sequences
                     #Converts fasta data to a format suitable for modular scanning
                     all_sequences = fasta_data.split('>')
                     selected_sequences = [(seq.split('\n', 1)[0], '\n'.join(seq.split('\n', 1)[1:])) for seq in all_sequences if seq.strip()]
-                    selected_species_str = "all_species"
-                
+                    
                 output_dir = create_output_dir(f"{protein_name.replace(' ', '_')}_{selected_species_str}_output")
                 
                 #Save the processed sequence to a file
@@ -220,7 +223,7 @@ def main():
                 aligned_fasta = run_clustalo(fasta_filename, output_dir)
                 plotcon_output = run_plotcon(aligned_fasta, output_dir)
 
-                #run motif_scan
+                #run motif scan function
                 motif_scan_for_each_sequence(selected_sequences, output_dir)
                 
                 # Asks the user whether to extract aligned sequences
@@ -237,7 +240,3 @@ def main():
 #check whether the script is run as a master program,if is ,the variable '__name__' will be set to main and main function will be called, allowing other scripts to use the functions defined in this script, without executing the code in the main function.
 if __name__ == "__main__":
     main()
-
-
-
-

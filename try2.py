@@ -12,7 +12,7 @@ def extract_species_and_sequences(fasta_data):
         if line.startswith('>'):
             if sequence_id and sequence_data:#add the found sequenceid and data to current species
                 species_dict.setdefault(current_species, []).append((sequence_id, sequence_data))
-            sequence_id = line.split()[0][1:]#parse the sequence ID,taking the part before the first space
+            sequence_id = line.split()[0][1:]#Splits the string line into Spaces to form a list,extract and remove the first character of the sequence ID -- '>'
             species_parts = line.split('[')#split with '[' as separator
             current_species = species_parts[1].split(']')[0] if len(species_parts) > 1 else "Unknown"
             sequence_data = ""#reset sequence data for receiving new sequence data
@@ -130,16 +130,16 @@ def run_plotcon(input_fasta, output_dir):
         "plotcon",
         "-sequence", input_fasta,
         "-graph", "png",#define the format of the output graph into 'png'
-        "-winsize", "4",
+        "-winsize", "4",#define the winsize into 4 in default
         "-goutfile", output_file,
     ]
     plotcon_command2 = [
     "plotcon",
     "-sequence", input_fasta,
-    "-graph", "x11",#define the format of the output graph into 'png'
+    "-graph", "x11",# display the generated graph directly in an X11 window
     "-winsize", "4"
     ]
-    subprocess.run(plotcon_command1, check=True)
+    subprocess.run(plotcon_command1, check=True)#generate 2 plots, one for save and one for output
     subprocess.run(plotcon_command2, check=True)
     print(f"Plotcon output generated: {output_file}")
     return output_file    
@@ -149,12 +149,13 @@ def motif_scan_for_each_sequence(selected_sequences, output_dir):
     for sequence_id, sequence in selected_sequences:
         process_sequence(sequence_id, sequence, output_dir)
 
+#define the function to run patmatmptifs
 def process_sequence(sequence_id, sequence, output_dir):
     output_motif = os.path.join(output_dir, f"motif_scan_{sequence_id}.txt")
     motifscan_command = [
         "patmatmotifs",
         "-full",
-        "-sequence", "stdin",
+        "-sequence", "stdin",#input the parsed sequence for motif scan
         "-outfile", output_motif
     ]
     print(f"Starting motif scan for {sequence_id}")

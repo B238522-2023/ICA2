@@ -126,14 +126,21 @@ def run_plotcon(input_fasta, output_dir):
     if os.path.exists(output_file):
         print(f"Warning: '{output_file}' already exists. Please remove or rename it before running this script.")
         return output_file
-    plotcon_command = [
+    plotcon_command1 = [
         "plotcon",
         "-sequence", input_fasta,
         "-graph", "png",#define the format of the output graph into 'png'
         "-winsize", "4",
         "-goutfile", output_file,
     ]
-    subprocess.run(plotcon_command, check=True)
+    plotcon_command2 = [
+    "plotcon",
+    "-sequence", input_fasta,
+    "-graph", "x11",#define the format of the output graph into 'png'
+    "-winsize", "4"
+    ]
+    subprocess.run(plotcon_command1, check=True)
+    subprocess.run(plotcon_command2, check=True)
     print(f"Plotcon output generated: {output_file}")
     return output_file    
     
@@ -143,7 +150,7 @@ def motif_scan_for_each_sequence(selected_sequences, output_dir):
         process_sequence(sequence_id, sequence, output_dir)
 
 def process_sequence(sequence_id, sequence, output_dir):
-    output_motif = os.path.join(output_dir, f"motif_scan_{sequence_id}.doc")
+    output_motif = os.path.join(output_dir, f"motif_scan_{sequence_id}.txt")
     motifscan_command = [
         "patmatmotifs",
         "-full",
@@ -151,7 +158,8 @@ def process_sequence(sequence_id, sequence, output_dir):
         "-outfile", output_motif
     ]
     print(f"Starting motif scan for {sequence_id}")
-    motif_scan_result = subprocess.run(motifscan_command, input=sequence, text=True, capture_output=True)
+
+    motif_scan_result = subprocess.run(motifscan_command, input= sequence, text=True, capture_output=True)
 
     if motif_scan_result.returncode != 0:
         print(f"Error in patmatmotifs for {sequence_id}:", motif_scan_result.stderr)
@@ -203,6 +211,7 @@ def main():
                 #If the user choose Yes, only process the selected species
                 if restrict_species == 'y':
                     species_dict = extract_species_and_sequences(fasta_data)
+                    print(species_dict)
                     selected_species, selected_sequences = user_select_species(species_dict)
                     selected_species_str = '_'.join(selected_species).replace(' ', '_')
                 else:
@@ -215,7 +224,7 @@ def main():
                 
                 #Save the processed sequence to a file
                 fasta_filename = os.path.join(output_dir, "processed_sequences.fasta")
-                fasta_data_to_analyze = '\n'.join(['>' + seq for _, seq in selected_sequences])
+                fasta_data_to_analyze = '\n'.join(['>' + id+"\n" + seq for id, seq in selected_sequences])
                 save_output_to_file(fasta_data_to_analyze, fasta_filename)
                 print("FASTA data saved to file.")
 
@@ -238,5 +247,4 @@ def main():
         print(f"An error occurred: {e}")       
         
 #check whether the script is run as a master program,if is ,the variable '__name__' will be set to main and main function will be called, allowing other scripts to use the functions defined in this script, without executing the code in the main function.
-if __name__ == "__main__":
-    main()
+main()
